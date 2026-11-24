@@ -1,4 +1,9 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@600;700&display=swap");
+
+@theme {
+  --font-brand: "Cairo", sans-serif;
+}
 
 @layer base {
   html {
