@@ -97,3 +97,7 @@ create policy "Users delete their own logs"
   for delete
   to authenticated
   using ((select auth.uid()) = user_id);
+
+grant usage on type public.debt_unit, public.prayer_name to authenticated;
+grant select, insert, update, delete on public.prayer_debts to authenticated;
+grant select, insert, update, delete on public.prayer_logs to authenticated;

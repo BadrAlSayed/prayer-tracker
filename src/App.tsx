@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { Home } from './components/Home'
+import { PageShell } from './components/PageShell'
 import { supabase } from './lib/supabase'
 
 function authErrorFromUrl() {
@@ -61,40 +63,34 @@ function App() {
     session?.user.user_metadata.name ??
     session?.user.email
 
+  if (!loading && session) {
+    return (
+      <PageShell>
+        <Home userId={session.user.id} name={name ?? 'Signed in'} onSignOut={signOut} />
+      </PageShell>
+    )
+  }
+
   return (
-    <div className="relative min-h-svh">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.18),transparent_70%)]" />
-      <main className="relative mx-auto flex min-h-svh w-full max-w-md flex-col justify-center px-6 py-16 text-left">
-        <h1 className="mb-3 text-3xl tracking-tight text-white">Prayer tracker</h1>
-        {loading ? (
-          <p>Checking your sign-in…</p>
-        ) : session ? (
-          <>
-            <p>Signed in as {name}</p>
-            <button
-              type="button"
-              className="mt-6 cursor-pointer rounded-full bg-emerald-600 px-5 py-3 font-[inherit] text-white disabled:cursor-wait disabled:opacity-70"
-              onClick={signOut}
-            >
-              Sign out
-            </button>
-          </>
-        ) : (
-          <>
-            <p>Sign in to save your prayer debt and the prayers you make up.</p>
-            <button
-              type="button"
-              className="mt-6 cursor-pointer rounded-full bg-emerald-600 px-5 py-3 font-[inherit] text-white disabled:cursor-wait disabled:opacity-70"
-              onClick={signInWithGoogle}
-              disabled={signingIn}
-            >
-              {signingIn ? 'Redirecting to Google…' : 'Sign in with Google'}
-            </button>
-          </>
-        )}
-        {error ? <p className="mt-4 text-red-300">{error}</p> : null}
-      </main>
-    </div>
+    <PageShell centered>
+      <h1 className="mb-3 text-3xl tracking-tight text-white">Prayer tracker</h1>
+      {loading ? (
+        <p>Checking your sign-in…</p>
+      ) : (
+        <>
+          <p>Sign in to save your prayer debt and the prayers you make up.</p>
+          <button
+            type="button"
+            className="mt-6 cursor-pointer rounded-full bg-emerald-600 px-5 py-3 font-[inherit] text-white disabled:cursor-wait disabled:opacity-70"
+            onClick={signInWithGoogle}
+            disabled={signingIn}
+          >
+            {signingIn ? 'Redirecting to Google…' : 'Sign in with Google'}
+          </button>
+        </>
+      )}
+      {error ? <p className="mt-4 text-red-300">{error}</p> : null}
+    </PageShell>
   )
 }
 
