@@ -1,5 +1,5 @@
 const ar = {
-  appName: 'متتبع قضاء الصلاة',
+  appName: 'قَضَاء',
   language: {
     switch: 'English',
     label: 'تغيير اللغة',

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAddPrayerLog, usePrayerOverview, useResetDebt, useSaveDebt } from '../data/prayers'
+import { AppTitle } from './AppTitle'
 import { LanguageToggle } from './LanguageToggle'
 import { dateLocale } from '../i18n'
 import {
@@ -98,8 +99,8 @@ export function Home({
     <div>
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-slate-400">{name}</p>
-          <h1 className="text-3xl tracking-tight text-white">{t('appName')}</h1>
+          <p className="mb-2 text-sm text-slate-400">{name}</p>
+          <AppTitle />
         </div>
         <div className="mt-1 flex items-center gap-4">
           <LanguageToggle />

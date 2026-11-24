@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { useTranslation } from 'react-i18next'
+import { AppTitle } from './components/AppTitle'
 import { Home } from './components/Home'
 import { LanguageToggle } from './components/LanguageToggle'
 import { PageShell } from './components/PageShell'
@@ -79,7 +80,7 @@ function App() {
       <div className="mb-8 flex justify-end">
         <LanguageToggle />
       </div>
-      <h1 className="mb-3 text-3xl tracking-tight text-white">{t('appName')}</h1>
+      <AppTitle className="mb-4" />
       {loading ? (
         <p>{t('auth.checking')}</p>
       ) : (

@@ -1,5 +1,5 @@
 const en = {
-  appName: 'Prayer debt tracker',
+  appName: 'Qadaa',
   language: {
     switch: 'العربية',
     label: 'Switch language',
