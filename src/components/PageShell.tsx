@@ -13,8 +13,8 @@ export function PageShell({
       <main
         className={
           centered
-            ? 'relative mx-auto flex min-h-svh w-full max-w-md flex-col justify-center px-6 py-16 text-left'
-            : 'relative mx-auto w-full max-w-lg px-6 py-10 text-left'
+            ? 'relative mx-auto flex min-h-svh w-full max-w-md flex-col justify-center px-6 py-16 text-start'
+            : 'relative mx-auto w-full max-w-lg px-6 py-10 text-start'
         }
       >
         {children}

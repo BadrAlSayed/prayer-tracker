@@ -1,15 +1,16 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAddPrayerLog, usePrayerOverview, useResetDebt, useSaveDebt } from '../data/prayers'
+import { LanguageToggle } from './LanguageToggle'
+import { dateLocale } from '../i18n'
 import {
   DEBT_UNITS,
   PRAYERS,
   addDays,
-  debtPhrase,
   formatDay,
   formatRecordedAt,
   journeyDay,
   localDateISO,
-  prayerLabel,
   recentDays,
   totalsForDay,
   type DebtUnit,
@@ -35,12 +36,8 @@ function parseQuantity(value: string) {
 
 function parseDebtForm(amount: string, startedOn: string, today: string) {
   const parsed = Number(amount)
-  if (!Number.isInteger(parsed) || parsed < 1) {
-    return 'Enter how long the debt is, as a whole number greater than zero.'
-  }
-  if (!startedOn || startedOn > today) {
-    return 'Choose today or a past day as the day you started.'
-  }
+  if (!Number.isInteger(parsed) || parsed < 1) return 'invalidAmount' as const
+  if (!startedOn || startedOn > today) return 'invalidStart' as const
   return { amount: parsed, startedOn }
 }
 
@@ -53,6 +50,7 @@ export function Home({
   name: string
   onSignOut: () => void
 }) {
+  const { t } = useTranslation()
   const overview = usePrayerOverview(userId)
   const saveDebtMutation = useSaveDebt(userId)
   const resetDebtMutation = useResetDebt(userId)
@@ -101,18 +99,21 @@ export function Home({
       <header className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm text-slate-400">{name}</p>
-          <h1 className="text-3xl tracking-tight text-white">Prayer tracker</h1>
+          <h1 className="text-3xl tracking-tight text-white">{t('appName')}</h1>
         </div>
-        <button
-          type="button"
-          className="mt-1 cursor-pointer text-sm text-slate-400 hover:text-white"
-          onClick={onSignOut}
-        >
-          Sign out
-        </button>
+        <div className="mt-1 flex items-center gap-4">
+          <LanguageToggle />
+          <button
+            type="button"
+            className="cursor-pointer text-sm text-slate-400 hover:text-white"
+            onClick={onSignOut}
+          >
+            {t('auth.signOut')}
+          </button>
+        </div>
       </header>
 
-      {overview.isPending ? <p className="mt-8">Loading your prayers…</p> : null}
+      {overview.isPending ? <p className="mt-8">{t('home.loading')}</p> : null}
       {data && !data.debt ? <DebtSetup onSave={saveDebt} /> : null}
       {data?.debt ? (
         <Tracker
@@ -138,8 +139,9 @@ function DebtSetup({
   const [unit, setUnit] = useState<DebtUnit>('year')
   const [startedOn, setStartedOn] = useState(localDateISO())
   const [saving, setSaving] = useState(false)
-  const [formError, setFormError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<'invalidAmount' | 'invalidStart' | null>(null)
   const today = localDateISO()
+  const { t } = useTranslation()
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -156,13 +158,11 @@ function DebtSetup({
 
   return (
     <form className="mt-8" onSubmit={submit}>
-      <h2 className="text-xl text-white">Set up your prayer debt</h2>
-      <p className="mt-2 text-slate-300">
-        Add how long you still have to make up, and the day you started making those prayers up.
-      </p>
+      <h2 className="text-xl text-white">{t('setup.title')}</h2>
+      <p className="mt-2 text-slate-300">{t('setup.intro')}</p>
 
       <label className="mt-6 block text-sm text-slate-400" htmlFor="debt-amount">
-        How long is the debt?
+        {t('setup.length')}
       </label>
       <div className="mt-2 flex gap-3">
         <input
@@ -177,19 +177,19 @@ function DebtSetup({
         <select
           className={fieldClass}
           value={unit}
-          aria-label="Debt length unit"
+          aria-label={t('setup.unit')}
           onChange={(event) => setUnit(event.target.value as DebtUnit)}
         >
           {DEBT_UNITS.map((item) => (
             <option key={item.id} value={item.id}>
-              {item.plural}
+              {t(`units.${item.id}`)}
             </option>
           ))}
         </select>
       </div>
 
       <label className="mt-6 block text-sm text-slate-400" htmlFor="started-on">
-        When did you start?
+        {t('setup.started')}
       </label>
       <input
         id="started-on"
@@ -200,9 +200,9 @@ function DebtSetup({
         onChange={(event) => setStartedOn(event.target.value)}
       />
 
-      {formError ? <p className="mt-4 text-red-300">{formError}</p> : null}
+      {formError ? <p className="mt-4 text-red-300">{t(`errors.${formError}`)}</p> : null}
       <button className={`${primaryButtonClass} mt-6`} type="submit" disabled={saving}>
-        {saving ? 'Saving…' : 'Save and start'}
+        {saving ? t('setup.saving') : t('setup.save')}
       </button>
     </form>
   )
@@ -222,12 +222,13 @@ function ChangeDebt({
   ) => Promise<boolean>
   onCancel: () => void
 }) {
+  const { t } = useTranslation()
   const [amount, setAmount] = useState(String(debt.debt_amount))
   const [unit, setUnit] = useState<DebtUnit>(debt.debt_unit)
   const [startedOn, setStartedOn] = useState(debt.started_on)
   const [clearLogs, setClearLogs] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [formError, setFormError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<'invalidAmount' | 'invalidStart' | null>(null)
   const [pending, setPending] = useState<{
     amount: number
     unit: DebtUnit
@@ -262,13 +263,11 @@ function ChangeDebt({
 
   return (
     <form className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4" onSubmit={submit}>
-      <h2 className="text-lg text-white">Change your debt</h2>
-      <p className="mt-1 text-sm text-slate-400">
-        Update how long you are making up, and the day you started.
-      </p>
+      <h2 className="text-lg text-white">{t('change.title')}</h2>
+      <p className="mt-1 text-sm text-slate-400">{t('change.intro')}</p>
 
       <label className="mt-4 block text-sm text-slate-400" htmlFor="reset-debt-amount">
-        How long is the debt?
+        {t('setup.length')}
       </label>
       <div className="mt-2 flex gap-3">
         <input
@@ -283,19 +282,19 @@ function ChangeDebt({
         <select
           className={fieldClass}
           value={unit}
-          aria-label="Debt length unit"
+          aria-label={t('setup.unit')}
           onChange={(event) => setUnit(event.target.value as DebtUnit)}
         >
           {DEBT_UNITS.map((item) => (
             <option key={item.id} value={item.id}>
-              {item.plural}
+              {t(`units.${item.id}`)}
             </option>
           ))}
         </select>
       </div>
 
       <label className="mt-4 block text-sm text-slate-400" htmlFor="reset-started-on">
-        When did you start?
+        {t('setup.started')}
       </label>
       <input
         id="reset-started-on"
@@ -307,7 +306,7 @@ function ChangeDebt({
       />
 
       <fieldset className="mt-4">
-        <legend className="text-sm text-slate-400">Prayers recorded so far</legend>
+        <legend className="text-sm text-slate-400">{t('change.recorded')}</legend>
         <label className="mt-2 flex items-start gap-2 text-sm text-slate-200">
           <input
             className="mt-1"
@@ -316,7 +315,7 @@ function ChangeDebt({
             checked={!clearLogs}
             onChange={() => setClearLogs(false)}
           />
-          <span>Keep them. Your totals stay as they are.</span>
+          <span>{t('change.keep')}</span>
         </label>
         <label className="mt-2 flex items-start gap-2 text-sm text-slate-200">
           <input
@@ -326,14 +325,14 @@ function ChangeDebt({
             checked={clearLogs}
             onChange={() => setClearLogs(true)}
           />
-          <span>Clear them. Your totals go back to zero.</span>
+          <span>{t('change.clear')}</span>
         </label>
       </fieldset>
 
-      {formError ? <p className="mt-4 text-red-300">{formError}</p> : null}
+      {formError ? <p className="mt-4 text-red-300">{t(`errors.${formError}`)}</p> : null}
       <div className="mt-4 flex items-center gap-3">
         <button className={primaryButtonClass} type="submit" disabled={saving}>
-          {clearLogs ? 'Save and clear prayers' : 'Save changes'}
+          {clearLogs ? t('change.saveClear') : t('change.save')}
         </button>
         <button
           type="button"
@@ -341,7 +340,7 @@ function ChangeDebt({
           onClick={onCancel}
           disabled={saving}
         >
-          Cancel
+          {t('change.cancel')}
         </button>
       </div>
       {pending ? (
@@ -378,6 +377,9 @@ function ConfirmDebtChange({
   onConfirm: () => void
   onBack: () => void
 }) {
+  const { t, i18n } = useTranslation()
+  const locale = dateLocale(i18n.language)
+
   return (
     <div className="fixed inset-0 z-20 flex items-end justify-center bg-slate-950/70 p-4 sm:items-center">
       <div
@@ -387,15 +389,16 @@ function ConfirmDebtChange({
         className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-5 shadow-xl"
       >
         <h2 id="confirm-debt-title" className="text-lg text-white">
-          Save these changes?
+          {t('change.confirmTitle')}
         </h2>
         <p className="mt-2 text-sm text-slate-300">
-          You will be making up {debtPhrase(amount, unit)}, starting {formatDay(startedOn)}.
+          {t('change.confirmDebt', {
+            debt: t(`units.${unit}`, { count: amount }),
+            day: formatDay(startedOn, locale),
+          })}
         </p>
         <p className="mt-2 text-sm text-slate-300">
-          {clearLogs
-            ? 'The prayers recorded so far will be cleared, and your totals will go back to zero.'
-            : 'The prayers recorded so far will stay.'}
+          {clearLogs ? t('change.confirmClear') : t('change.confirmKeep')}
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <button
@@ -405,7 +408,7 @@ function ConfirmDebtChange({
             disabled={saving}
             autoFocus
           >
-            Go back
+            {t('change.back')}
           </button>
           <button
             type="button"
@@ -417,7 +420,7 @@ function ConfirmDebtChange({
             onClick={onConfirm}
             disabled={saving}
           >
-            {saving ? 'Saving…' : clearLogs ? 'Yes, clear prayers' : 'Yes, save changes'}
+            {saving ? t('setup.saving') : clearLogs ? t('change.yesClear') : t('change.yesSave')}
           </button>
         </div>
       </div>
@@ -445,22 +448,27 @@ function Tracker({
     clearLogs: boolean,
   ) => Promise<boolean>
 }) {
+  const { t, i18n } = useTranslation()
   const [tab, setTab] = useState<'today' | 'week'>('today')
   const [editingDebt, setEditingDebt] = useState(false)
   const today = localDateISO()
+  const locale = dateLocale(i18n.language)
   const dayNumber = journeyDay(debt.started_on, today)
   const todayTotals = totalsForDay(logs, today)
+  const startedLabel = formatDay(debt.started_on, locale)
 
   return (
     <div className="mt-8">
       <p className="text-lg text-white">
         {dayNumber >= 1
-          ? `You are on day ${dayNumber} of making up your prayers.`
-          : `Your journey starts on ${formatDay(debt.started_on)}.`}
+          ? t('tracker.onDay', { count: dayNumber })
+          : t('tracker.startsOn', { day: startedLabel })}
       </p>
       <p className="mt-1 text-slate-400">
-        You are making up {debtPhrase(debt.debt_amount, debt.debt_unit)}, starting{' '}
-        {formatDay(debt.started_on)}.
+        {t('tracker.makingUp', {
+          debt: t(`units.${debt.debt_unit}`, { count: debt.debt_amount }),
+          day: startedLabel,
+        })}
       </p>
       {editingDebt ? (
         <ChangeDebt
@@ -478,10 +486,10 @@ function Tracker({
           className="mt-3 cursor-pointer text-sm text-emerald-400 hover:text-emerald-300"
           onClick={() => setEditingDebt(true)}
         >
-          Change debt
+          {t('change.action')}
         </button>
       )}
-      <h2 className="mt-6 text-sm text-slate-400">So far</h2>
+      <h2 className="mt-6 text-sm text-slate-400">{t('tracker.soFar')}</h2>
       <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
         {PRAYERS.map((prayer) => (
           <li
@@ -489,15 +497,19 @@ function Tracker({
             className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-center"
           >
             <p className="text-2xl text-white">{totals[prayer.id]}</p>
-            <p className="text-xs text-slate-400">{prayer.label}</p>
+            <p className="text-xs text-slate-400">{t(`prayers.${prayer.id}`)}</p>
           </li>
         ))}
       </ul>
 
       <p className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
         {latest
-          ? `Last recorded: ${prayerLabel(latest.prayer)} × ${latest.quantity} on ${formatRecordedAt(latest.created_at)}.`
-          : 'You have not recorded a prayer yet.'}
+          ? t('tracker.last', {
+              prayer: t(`prayers.${latest.prayer}`),
+              quantity: latest.quantity,
+              when: formatRecordedAt(latest.created_at, locale),
+            })
+          : t('tracker.empty')}
       </p>
 
       <div className="mt-6 flex gap-2">
@@ -506,14 +518,14 @@ function Tracker({
           className={tabButtonClass(tab === 'today')}
           onClick={() => setTab('today')}
         >
-          Today
+          {t('tabs.today')}
         </button>
         <button
           type="button"
           className={tabButtonClass(tab === 'week')}
           onClick={() => setTab('week')}
         >
-          Past week
+          {t('tabs.week')}
         </button>
       </div>
 
@@ -522,7 +534,7 @@ function Tracker({
           {PRAYERS.map((prayer) => (
             <PrayerRow
               key={prayer.id}
-              label={prayer.label}
+              label={t(`prayers.${prayer.id}`)}
               todayCount={todayTotals[prayer.id]}
               overall={totals[prayer.id]}
               onAdd={(quantity) => onAdd(prayer.id, today, quantity)}
@@ -553,6 +565,7 @@ function PrayerRow({
   overall: number
   onAdd: (quantity: number) => Promise<boolean>
 }) {
+  const { t } = useTranslation()
   const [quantity, setQuantity] = useState('1')
   const [saving, setSaving] = useState(false)
 
@@ -570,15 +583,17 @@ function PrayerRow({
     <li className="rounded-2xl border border-white/10 bg-white/5 p-4">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-lg text-white">{label}</h2>
-        <p className="text-right text-sm text-slate-400">
-          {todayCount} today
-          <span className="mt-0.5 block text-white">{overall} total</span>
+        <p className="text-end text-sm text-slate-400">
+          {t('tracker.todayCount', { count: todayCount })}
+          <span className="mt-0.5 block text-white">
+            {t('tracker.totalCount', { count: overall })}
+          </span>
         </p>
       </div>
       <form className="mt-3 flex items-center gap-3" onSubmit={submit}>
         <input
           className={`${fieldClass} w-20`}
-          aria-label={`How many ${label} prayers to add`}
+          aria-label={t('tracker.quantityLabel', { prayer: label })}
           inputMode="numeric"
           min={1}
           type="number"
@@ -586,7 +601,7 @@ function PrayerRow({
           onChange={(event) => setQuantity(event.target.value)}
         />
         <button className={primaryButtonClass} type="submit" disabled={saving}>
-          {saving ? 'Adding…' : `Add ${label}`}
+          {saving ? t('tracker.adding') : t('tracker.addPrayer', { prayer: label })}
         </button>
       </form>
     </li>
@@ -600,24 +615,26 @@ function PastWeek({
   logs: PrayerLog[]
   onAdd: (prayer: PrayerName, prayedOn: string, quantity: number) => Promise<boolean>
 }) {
+  const { t, i18n } = useTranslation()
+  const locale = dateLocale(i18n.language)
   const today = localDateISO()
   const days = recentDays(7, today)
   const [prayedOn, setPrayedOn] = useState(addDays(today, -1))
   const [prayer, setPrayer] = useState<PrayerName>('dhuhr')
   const [quantity, setQuantity] = useState('1')
   const [saving, setSaving] = useState(false)
-  const [formError, setFormError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<'invalidQuantity' | 'invalidWeekDay' | null>(null)
   const earliest = days[days.length - 1]
 
   async function submit(event: FormEvent) {
     event.preventDefault()
     const parsed = parseQuantity(quantity)
     if (!parsed) {
-      setFormError('Enter a whole number greater than zero.')
+      setFormError('invalidQuantity')
       return
     }
     if (prayedOn < earliest || prayedOn > today) {
-      setFormError('Choose a day from the past week.')
+      setFormError('invalidWeekDay')
       return
     }
     setFormError(null)
@@ -630,14 +647,12 @@ function PastWeek({
   return (
     <div className="mt-4">
       <form className="rounded-2xl border border-white/10 bg-white/5 p-4" onSubmit={submit}>
-        <h2 className="text-lg text-white">Add a prayer from this week</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Use this when you already prayed, and had not written it down yet.
-        </p>
+        <h2 className="text-lg text-white">{t('week.title')}</h2>
+        <p className="mt-1 text-sm text-slate-400">{t('week.intro')}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <input
             className={fieldClass}
-            aria-label="Day the prayer counts for"
+            aria-label={t('week.day')}
             type="date"
             min={earliest}
             max={today}
@@ -646,19 +661,19 @@ function PastWeek({
           />
           <select
             className={fieldClass}
-            aria-label="Prayer"
+            aria-label={t('week.prayer')}
             value={prayer}
             onChange={(event) => setPrayer(event.target.value as PrayerName)}
           >
             {PRAYERS.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.label}
+                {t(`prayers.${item.id}`)}
               </option>
             ))}
           </select>
           <input
             className={`${fieldClass} w-20`}
-            aria-label="Quantity"
+            aria-label={t('week.quantity')}
             inputMode="numeric"
             min={1}
             type="number"
@@ -666,10 +681,10 @@ function PastWeek({
             onChange={(event) => setQuantity(event.target.value)}
           />
           <button className={primaryButtonClass} type="submit" disabled={saving}>
-            {saving ? 'Adding…' : 'Add'}
+            {saving ? t('tracker.adding') : t('week.add')}
           </button>
         </div>
-        {formError ? <p className="mt-3 text-red-300">{formError}</p> : null}
+        {formError ? <p className="mt-3 text-red-300">{t(`errors.${formError}`)}</p> : null}
       </form>
 
       <ul className="mt-4 flex flex-col gap-3">
@@ -679,15 +694,15 @@ function PastWeek({
           return (
             <li key={day} className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <h3 className="text-white">
-                {day === today ? 'Today' : formatDay(day)}
+                {day === today ? t('tabs.today') : formatDay(day, locale)}
               </h3>
               {recorded.length === 0 ? (
-                <p className="mt-1 text-sm text-slate-400">Nothing recorded</p>
+                <p className="mt-1 text-sm text-slate-400">{t('week.nothing')}</p>
               ) : (
                 <ul className="mt-2 flex flex-col gap-1 text-sm">
                   {recorded.map((item) => (
                     <li key={item.id}>
-                      {item.label} × {totals[item.id]}
+                      {t(`prayers.${item.id}`)} × {totals[item.id]}
                     </li>
                   ))}
                 </ul>

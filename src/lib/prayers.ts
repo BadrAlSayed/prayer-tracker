@@ -1,16 +1,12 @@
 export const PRAYERS = [
-  { id: 'fajr', label: 'Fajr' },
-  { id: 'dhuhr', label: 'Dhuhr' },
-  { id: 'asr', label: 'Asr' },
-  { id: 'maghrib', label: 'Maghrib' },
-  { id: 'isha', label: 'Isha' },
+  { id: 'fajr' },
+  { id: 'dhuhr' },
+  { id: 'asr' },
+  { id: 'maghrib' },
+  { id: 'isha' },
 ] as const
 
-export const DEBT_UNITS = [
-  { id: 'day', singular: 'day', plural: 'days' },
-  { id: 'month', singular: 'month', plural: 'months' },
-  { id: 'year', singular: 'year', plural: 'years' },
-] as const
+export const DEBT_UNITS = [{ id: 'day' }, { id: 'month' }, { id: 'year' }] as const
 
 export type PrayerName = (typeof PRAYERS)[number]['id']
 export type DebtUnit = (typeof DEBT_UNITS)[number]['id']
@@ -55,26 +51,16 @@ export function journeyDay(startedOn: string, today = localDateISO()) {
   return Math.floor((current - start) / 86_400_000) + 1
 }
 
-export function debtPhrase(amount: number, unit: DebtUnit) {
-  const match = DEBT_UNITS.find((item) => item.id === unit)
-  const label = amount === 1 ? match?.singular : match?.plural
-  return `${amount} ${label}`
-}
-
-export function prayerLabel(prayer: PrayerName) {
-  return PRAYERS.find((item) => item.id === prayer)?.label ?? prayer
-}
-
-export function formatDay(isoDate: string) {
-  return new Date(`${isoDate}T00:00:00`).toLocaleDateString(undefined, {
+export function formatDay(isoDate: string, locale = 'en') {
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString(locale, {
     weekday: 'long',
     month: 'short',
     day: 'numeric',
   })
 }
 
-export function formatRecordedAt(isoTimestamp: string) {
-  return new Date(isoTimestamp).toLocaleString(undefined, {
+export function formatRecordedAt(isoTimestamp: string, locale = 'en') {
+  return new Date(isoTimestamp).toLocaleString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

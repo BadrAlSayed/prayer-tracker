@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { useTranslation } from 'react-i18next'
 import { Home } from './components/Home'
+import { LanguageToggle } from './components/LanguageToggle'
 import { PageShell } from './components/PageShell'
 import { supabase } from './lib/supabase'
 
@@ -11,6 +13,7 @@ function authErrorFromUrl() {
 }
 
 function App() {
+  const { t } = useTranslation()
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [signingIn, setSigningIn] = useState(false)
@@ -66,26 +69,29 @@ function App() {
   if (!loading && session) {
     return (
       <PageShell>
-        <Home userId={session.user.id} name={name ?? 'Signed in'} onSignOut={signOut} />
+        <Home userId={session.user.id} name={name ?? t('auth.signedIn')} onSignOut={signOut} />
       </PageShell>
     )
   }
 
   return (
     <PageShell centered>
-      <h1 className="mb-3 text-3xl tracking-tight text-white">Prayer tracker</h1>
+      <div className="mb-8 flex justify-end">
+        <LanguageToggle />
+      </div>
+      <h1 className="mb-3 text-3xl tracking-tight text-white">{t('appName')}</h1>
       {loading ? (
-        <p>Checking your sign-in…</p>
+        <p>{t('auth.checking')}</p>
       ) : (
         <>
-          <p>Sign in to save your prayer debt and the prayers you make up.</p>
+          <p>{t('auth.intro')}</p>
           <button
             type="button"
             className="mt-6 cursor-pointer rounded-full bg-emerald-600 px-5 py-3 font-[inherit] text-white disabled:cursor-wait disabled:opacity-70"
             onClick={signInWithGoogle}
             disabled={signingIn}
           >
-            {signingIn ? 'Redirecting to Google…' : 'Sign in with Google'}
+            {signingIn ? t('auth.redirecting') : t('auth.signIn')}
           </button>
         </>
       )}
