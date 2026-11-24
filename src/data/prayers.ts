@@ -31,6 +31,10 @@ export type SaveDebtInput = {
   startedOn: string
 }
 
+export type ResetDebtInput = SaveDebtInput & {
+  clearLogs: boolean
+}
+
 export type AddPrayerLogInput = {
   prayer: PrayerName
   prayedOn: string
@@ -93,6 +97,23 @@ export async function insertPrayerDebt(userId: string, input: SaveDebtInput) {
   assertNoError(error)
 }
 
+export async function resetPrayerDebt(userId: string, input: ResetDebtInput) {
+  const { error } = await supabase
+    .from('prayer_debts')
+    .update({
+      debt_amount: input.amount,
+      debt_unit: input.unit,
+      started_on: input.startedOn,
+    })
+    .eq('user_id', userId)
+  assertNoError(error)
+
+  if (!input.clearLogs) return
+
+  const { error: deleteError } = await supabase.from('prayer_logs').delete().eq('user_id', userId)
+  assertNoError(deleteError)
+}
+
 export async function insertPrayerLog(userId: string, input: AddPrayerLogInput) {
   const { error } = await supabase.from('prayer_logs').insert({
     user_id: userId,
@@ -119,6 +140,14 @@ export function useSaveDebt(userId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: SaveDebtInput) => insertPrayerDebt(userId, input),
+    onSuccess: () => refreshPrayers(queryClient, userId),
+  })
+}
+
+export function useResetDebt(userId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ResetDebtInput) => resetPrayerDebt(userId, input),
     onSuccess: () => refreshPrayers(queryClient, userId),
   })
 }
